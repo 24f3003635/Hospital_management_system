@@ -1,8 +1,10 @@
 import os
-from flask import Flask
+from flask import Flask, session
 from app import config
 from app.config import LocalDevelopmentConfig
 from app.database import db
+from app.controllers import login_manager, create_default_admin, init_routes
+
 
 app = None
 
@@ -15,13 +17,17 @@ def create_app():
       print("Staring Local Development")
       app.config.from_object(LocalDevelopmentConfig)
     db.init_app(app)
-    app.app_context().push()  
+    login_manager.init_app(app)
+    with app.app_context():
+        db.create_all()
+        create_default_admin()
+
+    init_routes(app)
+    
     return app
 
 app= create_app()
 
-
-from app.controllers import *
 
 
 if __name__ == '__main__':
