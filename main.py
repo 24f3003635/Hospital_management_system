@@ -1,35 +1,35 @@
-import os
-from flask import Flask, session
-from app import config
-from app.config import LocalDevelopmentConfig
+from flask import Flask
 from app.database import db
-from app.controllers import login_manager, create_default_admin, init_routes
-
-
-app = None
-
+from app.controllers import init_routes, login_manager, create_default_admin
+from app.config import LocalDevelopmentConfig
 
 def create_app():
-    app = Flask(__name__, template_folder="templates")
-    if os.getenv('ENV', "development") == "production":
-      raise Exception("Currently no production config is setup.")
-    else:
-      print("Staring Local Development")
-      app.config.from_object(LocalDevelopmentConfig)
+    app = Flask(__name__)
+    
+    # Load configuration
+    app.config.from_object(LocalDevelopmentConfig)
+    
+    # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
-    with app.app_context():
-        db.create_all()
-        create_default_admin()
-
+    login_manager.login_view = "login"
+    
+    # Initialize routes
     init_routes(app)
     
     return app
 
-app= create_app()
-
-
-
 if __name__ == '__main__':
-  
-  app.run(host='0.0.0.0',port=8080)
+    app = create_app()
+    
+    # Create database tables
+    with app.app_context():
+        try:
+            db.create_all()
+            print("Database tables created successfully!")
+            create_default_admin()
+            print("Default admin created successfully!")
+        except Exception as e:
+            print(f"Error creating database: {e}")
+    
+    app.run(debug=True)
