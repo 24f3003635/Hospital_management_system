@@ -41,8 +41,8 @@ def init_routes(app):
     def register():
         if request.method == "POST":
             try:
-                print("Registration form submitted!")  # Debug
-                print(f"Form data: {request.form}")    # Debug
+                print("Registration form submitted!") 
+                print(f"Form data: {request.form}") 
                 
                 username = request.form.get("username")
                 password = request.form.get("password")
@@ -53,26 +53,22 @@ def init_routes(app):
                 address = request.form.get("address")
                 email = request.form.get("email")
 
-                # Check if username already exists
                 existing_user = User.query.filter_by(username=username).first()
                 if existing_user:
                     flash('Username already taken!', 'danger')
                     return render_template("sign_up.html")
 
-                # Check if email already exists
                 existing_email = Patient.query.filter_by(email=email).first()
                 if existing_email:
                     flash('Email already registered!', 'danger')
                     return render_template("sign_up.html")
 
-                # Create new user
                 hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
                 new_user = User(username=username, password=hashed_password, role="patient")
                 db.session.add(new_user)
-                db.session.flush()  # Get the ID without committing
-                print(f"New user created with ID: {new_user.id}")  # Debug
+                db.session.flush() 
+                print(f"New user created with ID: {new_user.id}") 
 
-                # Create new patient
                 new_patient = Patient(
                     user_id=new_user.id,
                     name=name,
@@ -85,38 +81,56 @@ def init_routes(app):
                 db.session.add(new_patient)
                 db.session.commit()
                 
-                print("Registration successful!")  # Debug
+                print("Registration successful!") 
                 flash('Registration successful! Please login.', 'success')
                 return redirect(url_for("login"))
             
             except Exception as e:
                 db.session.rollback()
-                print(f"Registration error: {e}")  # Debug
+                print(f"Registration error: {e}") 
                 flash(f'Registration failed: {str(e)}', 'danger')
                 return render_template("sign_up.html")
     
         return render_template("sign_up.html")
 
-    # ... rest of your routes remain the same
+   
     @app.route("/login", methods=["GET", "POST"])
     def login():
         if request.method == "POST":
             username = request.form.get("username")
             password = request.form.get("password")
+        
+            print(f"Login attempt - Username: {username}, Password: {password}") 
+        
             user = User.query.filter_by(username=username).first()
 
-            if user and check_password_hash(user.password, password):
-                login_user(user)
-                if user.role == "admin":
-                    return redirect(url_for("admin_dashboard"))
-                elif user.role == "doctor":
-                    return redirect(url_for("doctor_dashboard"))
+            if user:
+                print(f"User found - ID: {user.id}, Role: {user.role}")
+            
+                if check_password_hash(user.password, password):
+                    print("✓ Password matches!") 
+                    login_user(user)
+                    if user.role == "admin":
+                        print("Redirecting to admin dashboard") 
+                        return redirect(url_for("admin_dashboard"))
+                    elif user.role == "doctor":
+                        return redirect(url_for("doctor_dashboard"))
+                    else:
+                        return redirect(url_for("patient_dashboard"))
                 else:
-                    return redirect(url_for("patient_dashboard"))
+                    print("✗ Password does not match!") 
+                    flash("Invalid username or password", "danger")
             else:
+                print(f"✗ No user found with username: {username}") 
                 flash("Invalid username or password", "danger")
-                return render_template("login.html")
+            
+            return render_template("login.html")
+    
         return render_template("login.html")
+
+
+
+
 
     @app.route("/patient_dashboard")
     @login_required

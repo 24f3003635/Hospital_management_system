@@ -17,7 +17,7 @@
             min-height: 100vh;
             display: grid;
             place-items: center;
-            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)), ;
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7));
             background-size: cover;
             background-position: center;
             color: #fff;
@@ -118,7 +118,6 @@
             margin: 25px 0;
         }
 
-
         .footer-links {
             text-align: center;
             margin-top: 25px;
@@ -144,20 +143,24 @@
 
         <form method="POST" action="/login">
             <div class="mb-3">
-                <label for="email" class="form-label">Email address</label>
-                <input type="email" class="form-control" id="username" placeholder="name@example.com">
+                <label for="username" class="form-label">Email address</label>
+                <!-- ADDED name="username" -->
+                <input type="email" class="form-control" id="username" name="username" placeholder="name@example.com" required>
                 <div class="form-text">We'll never share your email with anyone else.</div>
             </div>
 
             <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="password" placeholder="Enter your password">
+                <!-- ADDED name="password" -->
+                <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
             </div>
 
             <div class="mb-3 form-check">
                 <input type="checkbox" class="form-check-input" id="rememberMe">
                 <label class="form-check-label" for="rememberMe">Remember me</label>
             </div>
+
+            <!-- Flash messages -->
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
@@ -172,8 +175,6 @@
             <button type="submit" class="btn btn-primary w-100 btn-login">Sign In</button>
 
             <div class="divider"></div>
-
-
 
             <div class="footer-links">
                 <a href="#" id="createacc">Create an account</a>

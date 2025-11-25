@@ -6,15 +6,12 @@ from app.config import LocalDevelopmentConfig
 def create_app():
     app = Flask(__name__)
     
-    # Load configuration
     app.config.from_object(LocalDevelopmentConfig)
-    
-    # Initialize extensions
+  
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = "login"
     
-    # Initialize routes
     init_routes(app)
     
     return app
@@ -22,7 +19,6 @@ def create_app():
 if __name__ == '__main__':
     app = create_app()
     
-    # Create database tables
     with app.app_context():
         try:
             db.create_all()

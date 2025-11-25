@@ -59,7 +59,7 @@ class Appointment(db.Model):
 
     date = db.Column(db.String(20), nullable=False)
     time = db.Column(db.String(20), nullable=False)
-    status = db.Column(db.String(20), default='scheduled')  # scheduled, completed, cancelled
+    status = db.Column(db.String(20), default='scheduled')
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
