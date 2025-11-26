@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Doctor</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background-color: #1e1f22;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .form-container {
+            width: 100%;
+            max-width: 700px;
+            padding: 30px;
+            background-color: #2b2d31;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-header h2 {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .form-header p {
+            color: #aaa;
+        }
+
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #ddd;
+            display: block;
+        }
+
+        .form-control, .form-select {
+            background-color: #1e1f22;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 10px 12px;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: #1e1f22;
+            color: #fff;
+            border-color: #5865f2;
+            box-shadow: 0 0 0 0.2rem rgba(88, 101, 242, 0.25);
+        }
+
+        .form-control::placeholder {
+            color: #6c757d;
+            opacity: 1;
+        }
+
+        .btn-primary {
+            background-color: #5865f2;
+            border: none;
+            padding: 12px 24px;
+            font-weight: 500;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background-color: #4752c4;
+            transform: translateY(-2px);
+        }
+
+        .alert {
+            margin-bottom: 20px;
+            border: none;
+            border-radius: 6px;
+        }
+
+        .alert-success {
+            background-color: rgba(25, 135, 84, 0.2);
+            border-left: 4px solid #198754;
+            color: #d1e7dd;
+        }
+
+        .alert-danger {
+            background-color: rgba(220, 53, 69, 0.2);
+            border-left: 4px solid #dc3545;
+            color: #f8d7da;
+        }
+
+        .alert-warning {
+            background-color: rgba(255, 193, 7, 0.2);
+            border-left: 4px solid #ffc107;
+            color: #fff3cd;
+        }
+
+        .alert-info {
+            background-color: rgba(13, 202, 240, 0.2);
+            border-left: 4px solid #0dcaf0;
+            color: #cff4fc;
+        }
+
+
+        .row {
+            margin-bottom: 16px;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .login-link a {
+            color: #5865f2;
+            text-decoration: none;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            border: none;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .text-muted {
+            color: #cff4fc !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <div class="form-header">
+            <h2>Edit Doctor</h2>
+            <p>Update doctor information</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="filter: invert(1);"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('edit_doctor', id=doctor.id) }}">
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="username" class="form-label">Username *</label>
+                    <input type="text" class="form-control" id="username" name="username" required 
+                           value="{{ doctor.user.username if doctor.user else '' }}">
+                    <small class="text-muted">Username cannot be changed</small>
+                </div>
+                <div class="col-md-6">
+                    <label for="password" class="form-label">New Password</label>
+                    <input type="password" class="form-control" id="password" name="password" 
+                           placeholder="Leave blank to keep current password">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="name" class="form-label">Full Name *</label>
+                    <input type="text" class="form-control" id="name" name="name" required 
+                           value="{{ doctor.name }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="email" class="form-label">Email Address *</label>
+                    <input type="email" class="form-control" id="email" name="email" required 
+                           value="{{ doctor.email }}">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="specialization" class="form-label">Specialization *</label>
+                    <input type="text" class="form-control" id="specialization" name="specialization" required 
+                           value="{{ doctor.specialization }}">
+                </div>
+                <div class="col-md-6">
+                    <label for="experience" class="form-label">Experience (years) *</label>
+                    <input type="number" class="form-control" id="experience" name="experience" min="0" max="100" required 
+                           value="{{ doctor.experience }}">
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <label for="availability" class="form-label">Availability</label>
+                    <input type="text" class="form-control" id="availability" name="availability" 
+                           value="{{ doctor.availability if doctor.availability else '' }}"
+                           placeholder="e.g., Monday-Friday 9am-5pm">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12 btn-group">
+                    <button type="submit" class="btn btn-primary">Update Doctor</button>
+                    <a href="{{ url_for('manage_doctor') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </div>
+        </form>
+
+        <div class="login-link">
+            <p>Return to <a href="{{ url_for('manage_doctor') }}">Manage Doctors</a> or <a href="{{ url_for('admin_dashboard') }}">Main Menu</a></p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const password = document.getElementById('password').value;
+            const email = document.getElementById('email').value;
+            
+           
+            if (password && password.length < 6) {
+                e.preventDefault();
+                alert('Password must be at least 6 characters long if provided.');
+                return;
+            }
+            
+            if (!email.includes('@') || !email.includes('.')) {
+                e.preventDefault();
+                alert('Please enter a valid email address.');
+                return;
+            }
+        });
+    </script>
+</body>
+</html>
+

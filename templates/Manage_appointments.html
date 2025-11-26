@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Appointments</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f5f5f5; }
+        .patient-row {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .patient-row:hover { box-shadow: 0 0 6px rgba(0,0,0,0.15); }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark shadow-sm px-4">
+        <a href="{{ url_for('admin_dashboard') }}" class="navbar-brand">Main Menu</a>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Upcoming Appointments</h4>
+            </div>
+            <div class="card-body">
+                <div class="row patient-header fw-bold border-bottom pb-2 mb-3">
+                    <div class="col">Sr No.</div>
+                    <div class="col">Name</div>
+                    <div class="col">Doctor Name</div>
+                    <div class="col">Department</div>
+                    <div class="col">History</div>
+                </div>
+                {% for appointment in appointments %}
+                    {% if appointment.date > current_date %}
+                    <div class="row patient-row align-items-center py-2 border-bottom">
+                        <div class="col">{{ loop.index }}</div>
+                        <div class="col">{{ appointment.name }}</div>
+                        <div class="col">{{ appointment.name_1 }}</div>
+                        <div class="col">{{ appointment.specialization }}</div>
+                        <div class="col">
+                            <a href="{{ url_for('patient_history', id=appointment.patient_id) }}" class="btn btn-warning btn-sm me-1">View</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Past Appointments</h4>
+            </div>
+            <div class="card-body">
+                <div class="row patient-header fw-bold border-bottom pb-2 mb-3">
+                    <div class="col">Sr No.</div>
+                    <div class="col">Name</div>
+                    <div class="col">Doctor Name</div>
+                    <div class="col">Department</div>
+                    <div class="col">History</div>
+                </div>
+                {% for appointment in appointments %}
+                    {% if appointment.date < current_date %}
+                    <div class="row patient-row align-items-center py-2 border-bottom">
+                        <div class="col">{{ loop.index }}</div>
+                        <div class="col">{{ appointment.name }}</div>
+                        <div class="col">{{ appointment.name_1 }}</div>
+                        <div class="col">{{ appointment.specialization }}</div>
+                        <div class="col">
+                            <a href="{{ url_for('patient_history', id=appointment.patient_id) }}" class="btn btn-warning btn-sm me-1">View</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

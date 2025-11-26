@@ -1,8 +1,11 @@
 from flask import render_template, request, url_for, redirect, flash
+from sqlalchemy import or_
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.database import db
+from sqlalchemy import select
 from app.model import User, Patient, Doctor, Appointment, MedicalRecord 
+from datetime import datetime
 import sys
 
 login_manager = LoginManager()
@@ -128,10 +131,6 @@ def init_routes(app):
     
         return render_template("login.html")
 
-
-
-
-
     @app.route("/patient_dashboard")
     @login_required
     def patient_dashboard():
@@ -142,16 +141,333 @@ def init_routes(app):
     @app.route("/doctor_dashboard")
     @login_required
     def doctor_dashboard():
-        if current_user.role != 'doctor':
+        if current_user.role != 'patient':
             return redirect(url_for('home'))
-        return render_template("doctor_dashboard.html", username=current_user.username)
+        return render_template("patient_dashboard.html", username=current_user.username)
+
 
     @app.route("/admin_dashboard")
     @login_required
     def admin_dashboard():
         if current_user.role != 'admin':
             return redirect(url_for('home'))
-        return render_template("admin_dashboard.html", username=current_user.username)
+        doctor_count = Doctor.query.count()
+        patient_count = Patient.query.count()
+        appointment_count = Appointment.query.count()
+        return render_template("admin_dashboard.html", username=current_user.username, dc=doctor_count,pc=patient_count,ac=appointment_count )
+
+    
+    @app.route("/manage_doctor")
+    @login_required
+    def manage_doctor():
+        doctors = db.session.execute(select(Doctor.id, Doctor.name, Doctor.specialization)).all()
+        return render_template("Manage_doctor.html", doctors=doctors)
+    
+    @app.route("/create_doc", methods=["GET", "POST"])
+    @login_required
+    def create_doc():
+        if request.method == "POST":
+            try:
+                print("Registration form submitted!") 
+                print(f"Form data: {request.form}") 
+                
+                username = request.form.get("username")
+                password = request.form.get("password")
+                name = request.form.get("name")
+                specialization = request.form.get("specialization")
+                experience = request.form.get("experience")
+                email = request.form.get("email")
+
+                existing_user = User.query.filter_by(username=username).first()
+                if existing_user:
+                    flash('Username already taken!', 'danger')
+                    return render_template("Create_doc.html")
+
+                existing_email = Doctor.query.filter_by(email=email).first()
+                if existing_email:
+                    flash('Email already registered!', 'danger')
+                    return render_template("Create_doc.html")
+
+                hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
+                new_user = User(username=username, password=hashed_password, role="doctor")
+                db.session.add(new_user)
+                db.session.flush() 
+                print(f"New user created with ID: {new_user.id}") 
+
+                new_doctor = Doctor(
+                    user_id=new_user.id,
+                    name=name,
+                    specialization=specialization,
+                    experience=experience,
+                    email=email
+                )
+                db.session.add(new_doctor)
+                db.session.commit()
+                
+                print("Registration successful!") 
+                flash('Registration successful! ', 'success')
+                return redirect(url_for("admin_dashboard"))
+            
+            except Exception as e:
+                db.session.rollback()
+                print(f"Registration error: {e}") 
+                flash(f'Registration failed: {str(e)}', 'danger')
+                return render_template("Create_doc.html")
+    
+        return render_template("Create_doc.html")
+
+    @app.route("/edit_doctor/<int:id>", methods=["GET", "POST"])
+    @login_required
+    def edit_doctor(id):
+        doctor = Doctor.query.get_or_404(id)
+    
+        if request.method == "POST":
+            try:
+             
+                username = request.form.get("username")
+                password = request.form.get("password")
+                name = request.form.get("name")
+                specialization = request.form.get("specialization")
+                experience = request.form.get("experience")
+                email = request.form.get("email")
+                availability = request.form.get("availability")
+            
+                if not all([name, specialization, experience, email]):
+                    flash('All required fields must be filled!', 'danger')
+                    return render_template("edit_doctor.html", doctor=doctor)
+            
+
+                existing_email = Doctor.query.filter(Doctor.email == email, Doctor.id != id).first()
+                if existing_email:
+                    flash('Email already registered to another doctor!', 'danger')
+                    return render_template("edit_doctor.html", doctor=doctor)
+            
+
+                doctor.name = name
+                doctor.specialization = specialization
+                doctor.experience = int(experience)
+                doctor.email = email
+                doctor.availability = availability
+            
+               
+                if doctor.user:
+                    existing_username = User.query.filter(User.username == username, User.id != doctor.user.id).first()
+                    if existing_username:
+                        flash('Username already taken!', 'danger')
+                        return render_template("edit_doctor.html", doctor=doctor)
+                
+                    doctor.user.username = username
+                
+
+                    if password:
+                        doctor.user.password = generate_password_hash(password, method="pbkdf2:sha256")
+            
+                db.session.commit()
+                flash('Doctor information updated successfully!', 'success')
+                return redirect(url_for("manage_doctor"))
+        
+            except Exception as e:
+                db.session.rollback()
+                print(f"Update error: {e}")
+                flash(f'Update failed: {str(e)}', 'danger')
+                return render_template("edit_doctor.html", doctor=doctor)
+    
+        return render_template("edit_doctor.html", doctor=doctor)
+    
+    
+    @app.route("/delete_doctor/<int:id>",methods=["GET", "POST"])
+    @login_required
+    def delete_doctor(id):
+        if current_user.role != 'admin':
+            flash('You are not authorized to delete doctors!', 'danger')
+            return redirect(url_for('manage_doctor'))
+    
+        try:
+            doctor = Doctor.query.get_or_404(id)
+                
+            user_id = doctor.user_id
+            db.session.delete(doctor)
+
+            user = User.query.get(user_id)
+            if user:
+                db.session.delete(user)
+        
+            db.session.commit()
+            flash('Doctor deleted successfully!', 'success')
+        
+        except Exception as e:
+            db.session.rollback()
+            print(f"Delete error: {e}")
+            flash(f'Delete failed: {str(e)}', 'danger')
+    
+        return redirect(url_for('manage_doctor'))
+
+    @app.route("/manage_patient")
+    @login_required
+    def manage_patient():
+        patients = db.session.execute(select(Patient.id, Patient.name, Patient.gender)).all()
+        return render_template("Manage_patient.html", patients=patients)
+    
+    @app.route("/edit_patient/<int:id>", methods=["GET", "POST"])
+    @login_required
+    def edit_patient(id):
+        patient = Patient.query.get_or_404(id)
+    
+        if request.method == "POST":
+            try:
+             
+                username = request.form.get("username")
+                password = request.form.get("password")
+                name = request.form.get("name")
+                phone = request.form.get("phone")
+                age = request.form.get("age")
+                email = request.form.get("email")
+                gender = request.form.get("gender")
+                address = request.form.get("address")
+            
+                if not all([name, phone, age, email,gender,address]):
+                    flash('All required fields must be filled!', 'danger')
+                    return render_template("edit_patient.html", patient=patient)
+            
+
+                existing_email = Patient.query.filter(Patient.email == email, Patient.id != id).first()
+                if existing_email:
+                    flash('Email already registered to another patient!', 'danger')
+                    return render_template("edit_patient.html", patient=patient)
+            
+
+                patient.name = name
+                patient.phone = phone
+                patient.age = int(age)
+                patient.email = email
+                patient.gender = gender
+                patient.address=address
+            
+               
+                if patient.user:
+                    existing_username = User.query.filter(User.username == username, User.id != patient.user.id).first()
+                    if existing_username:
+                        flash('Username already taken!', 'danger')
+                        return render_template("edit_patient.html", patient=patient)
+                
+                    patient.user.username = username
+                
+
+                    if password:
+                        patient.user.password = generate_password_hash(password, method="pbkdf2:sha256")
+            
+                db.session.commit()
+                flash('Patient information updated successfully!', 'success')
+                return redirect(url_for("manage_patient"))
+        
+            except Exception as e:
+                db.session.rollback()
+                print(f"Update error: {e}")
+                flash(f'Update failed: {str(e)}', 'danger')
+                return render_template("edit_patient.html", patient=patient)
+    
+        return render_template("edit_patient.html", patient=patient)
+    
+    @app.route("/delete_patient/<int:id>",methods=["GET", "POST"])
+    @login_required
+    def delete_patient(id):
+        if current_user.role != 'admin':
+            flash('You are not authorized to delete patients!', 'danger')
+            return redirect(url_for('manage_patient'))
+    
+        try:
+            patient = Patient.query.get_or_404(id)
+                
+            user_id = patient.user_id
+            db.session.delete(patient)
+
+            user = User.query.get(user_id)
+            if user:
+                db.session.delete(user)
+        
+            db.session.commit()
+            flash('Patient deleted successfully!', 'success')
+        
+        except Exception as e:
+            db.session.rollback()
+            print(f"Delete error: {e}")
+            flash(f'Delete failed: {str(e)}', 'danger')
+    
+        return redirect(url_for('manage_patient'))
+
+    
+
+    @app.route("/manage_appointment")
+    @login_required
+    def manage_appointment():
+        appointments = db.session.query(
+            Appointment.id,
+            Patient.name,
+            Appointment.patient_id,
+            Doctor.name, 
+            Doctor.specialization,
+            Appointment.date,
+            Appointment.time,
+            Appointment.status
+            ).join(Patient).join(Doctor).all()
+        
+        now = datetime.now()
+        current_date = now.date()
+        current_time = now.time()
+    
+        return render_template("Manage_appointments.html", appointments=appointments, current_date=current_date, current_time=current_time )
+    
+    @app.route("/search",methods=["GET", "POST"])
+    @login_required
+    def search():
+        query = request.args.get("query", "").strip()
+
+        if not query:
+            flash("Please enter a search term.", "warning")
+            return redirect(request.referrer or url_for("home"))
+    
+        search_terms = query.split()
+    
+        base_query = Doctor.query
+        conditions = []
+        for term in search_terms:
+            term_condition = or_(Doctor.name.ilike(f"%{term}%"),Doctor.specialization.ilike(f"%{term}%"))
+            conditions.append(term_condition)
+    
+        if conditions:
+            base_query = base_query.filter(*conditions)
+        results = base_query.all()
+    
+        if not results:
+            flash(f"No doctors found for '{query}'. Try different keywords.", "info")
+    
+        return render_template("search.html", query=query, results=results)
+
+    
+    @app.route("/patient_history/<int:id>", methods=["GET", "POST"])
+    @login_required
+    def patient_history(id):
+        medical_history = db.session.query(
+        MedicalRecord.appointment_id,
+        MedicalRecord.diagnosis,
+        MedicalRecord.treatment,
+        MedicalRecord.prescription,
+        MedicalRecord.notes,
+        Patient.name,
+        Doctor.name,
+        Doctor.specialization,
+        ).join(Doctor).join(Patient).filter(MedicalRecord.patient_id == id).all()
+
+
+        return render_template("patient_history.html", medical_history=medical_history)
+    
+    @app.route("/doctor/<int:id>")
+    @login_required
+    def doctor_detail(id):
+        doctor = Doctor.query.get_or_404(id)
+        return render_template("doctor_detail.html", doctor=doctor)
+
+    
 
     @app.route("/logout")
     @login_required

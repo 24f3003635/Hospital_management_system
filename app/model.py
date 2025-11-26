@@ -42,7 +42,7 @@ class Doctor(db.Model):
     name = db.Column(db.String(200), nullable=False)
     specialization = db.Column(db.String(200))
     availability = db.Column(db.String(200))
-    phone = db.Column(db.String(20))
+    experience = db.Column(db.Integer)
     email = db.Column(db.String(200))
 
     appointments = db.relationship("Appointment", backref="doctor", cascade="all, delete-orphan")
@@ -78,4 +78,5 @@ class MedicalRecord(db.Model):
     diagnosis = db.Column(db.Text)
     treatment = db.Column(db.Text)
     prescription = db.Column(db.Text)
+    notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search Results</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('home') }}">Hospital Management</a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <form class="d-flex mb-4" action="{{ url_for('search') }}" method="GET">
+                    <input class="form-control me-2" 
+                           type="search" 
+                           name="query" 
+                           value="{{ query }}"
+                           placeholder="Search doctors by name, specialization, or keywords..." 
+                           required>
+                    <button class="btn btn-outline-success" type="submit">Search</button>
+                </form>
+
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            Search Results for "{{ query }}"
+                            <span class="badge bg-secondary ms-2">{{ results|length }} found</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if results %}
+                            <div class="list-group">
+                                {% for doctor in results %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">{{ doctor.name }}</h5>
+                                        <small class="text-muted">ID: {{ doctor.id }}</small>
+                                    </div>
+                                    <p class="mb-1">
+                                        <strong>Specialization:</strong> {{ doctor.specialization }}<br>
+                                        <strong>Experience:</strong> {{ doctor.experience }} years<br>
+                                        {% if doctor.availability %}
+                                        <strong>Availability:</strong> {{ doctor.availability }}
+                                        {% endif %}
+                                    </p>
+                                    <small class="text-muted">Email: {{ doctor.email }}</small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <p class="text-muted">No doctors found matching your search criteria.</p>
+                                <p>Try searching with different keywords or broader terms.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="text-center mt-3">
+                    <a href="javascript:history.back()" class="btn btn-secondary">Go Back</a>
+                    <a href="{{ url_for('home') }}" class="btn btn-outline-primary ms-2">Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
