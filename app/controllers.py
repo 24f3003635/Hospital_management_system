@@ -1,11 +1,11 @@
-from flask import render_template, request, url_for, redirect, flash
+from flask import render_template, request, url_for, redirect, flash,jsonify
 from sqlalchemy import or_
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.database import db
 from sqlalchemy import select
 from app.model import User, Patient, Doctor, Appointment, MedicalRecord 
-from datetime import datetime
+from datetime import datetime, date,timedelta
 import sys
 
 login_manager = LoginManager()
@@ -141,9 +141,20 @@ def init_routes(app):
     @app.route("/doctor_dashboard")
     @login_required
     def doctor_dashboard():
-        if current_user.role != 'patient':
+        if current_user.role != 'doctor':
             return redirect(url_for('home'))
-        return render_template("patient_dashboard.html", username=current_user.username)
+        appointments = db.session.query(
+            Appointment.id,
+            Patient.name,
+            Appointment.patient_id,
+            Doctor.name, 
+            Doctor.specialization,
+            Appointment.date,
+            Appointment.time,
+            Appointment.status,
+            ).join(Patient).join(Doctor).filter(Doctor.id == current_user.id).all()
+
+        return render_template("doctor_dashboard.html", appointments=appointments, id=current_user.id)
 
 
     @app.route("/admin_dashboard")
@@ -411,11 +422,8 @@ def init_routes(app):
             Appointment.status
             ).join(Patient).join(Doctor).all()
         
-        now = datetime.now()
-        current_date = now.date()
-        current_time = now.time()
-    
-        return render_template("Manage_appointments.html", appointments=appointments, current_date=current_date, current_time=current_time )
+        current_date = date.today().isoformat() # need to change it to date format
+        return render_template("Manage_appointments.html", appointments=appointments, current_date=current_date )
     
     @app.route("/search",methods=["GET", "POST"])
     @login_required
@@ -467,7 +475,142 @@ def init_routes(app):
         doctor = Doctor.query.get_or_404(id)
         return render_template("doctor_detail.html", doctor=doctor)
 
+    @app.route("/doctor_action/<string:action>/<int:id>",methods=["GET", "POST"])
+    @login_required
+    def doctor_action(action,id):
+        appointment = Appointment.query.get(id)
+        if action =='completed':
+            Appointment.status='completed'
+            return("doctor_dashboard.html")
+        if action =='cancel':
+            Appointment.status='cancel'
+            return("doctor_dashboard.html")
+        
+
+    @app.route("/update_patient_history/<int:appointment_id>", methods=["GET", "POST"])
+    @login_required
+    def update_patient_history(appointment_id):
     
+        appointment = Appointment.query.get_or_404(appointment_id)
+        patient = Patient.query.get(appointment.patient_id)
+        doctor = Doctor.query.get(appointment.doctor_id)
+    
+   
+        medical_record = MedicalRecord.query.filter_by(appointment_id=appointment_id).first()
+    
+        if request.method == "POST":
+            if not medical_record:
+
+                medical_record = MedicalRecord(
+                    appointment_id=appointment_id,
+                    patient_id=appointment.patient_id,
+                    doctor_id=appointment.doctor_id,
+                    diagnosis=request.form.get('diagnosis'),
+                    treatment=request.form.get('treatment'),
+                    prescription=request.form.get('prescription'),
+                    notes=request.form.get('notes')
+                    )
+                db.session.add(medical_record)
+            else:
+
+                medical_record.diagnosis = request.form.get('diagnosis')
+                medical_record.treatment = request.form.get('treatment')
+                medical_record.prescription = request.form.get('prescription')
+                medical_record.notes = request.form.get('notes')
+        
+            db.session.commit()
+            flash('Patient history updated successfully!', 'success')
+            return redirect(url_for('doctor_dashboard'))
+    
+        return render_template("update_patient_history.html",
+                         appointment=appointment,
+                         patient=patient,
+                         doctor=doctor,
+                         medical_record=medical_record)
+    
+  
+    @app.route("/doctor/<int:id>/availability")
+    def doctor_availability(id):
+        doctor = Doctor.query.get_or_404(id)
+    
+  
+        today = datetime.now().date()
+        next_7_days = [(today + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(7)]
+    
+        availability_data = parse_availability_string(doctor.availability)
+    
+ 
+        current_availability = {}
+        for date_str, slots in availability_data.items():
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+            if date_obj >= today:
+                current_availability[date_str] = slots
+
+        doctor.availability = create_availability_string(current_availability)
+        db.session.commit()
+    
+        return render_template("doctor_availability.html", doctor=doctor, dates=next_7_days,availability_data=current_availability)
+
+    @app.route("/update_slot", methods=["POST"])
+    def update_slot():
+        doctor_id = request.form.get("doctor_id")
+        date = request.form.get("date")
+        slot = request.form.get("slot")
+        status = request.form.get("status")
+    
+        doctor = Doctor.query.get_or_404(doctor_id)
+    
+
+        availability_data = parse_availability_string(doctor.availability)
+    
+
+        if date not in availability_data:
+            availability_data[date] = []
+    
+
+        if status == "available" and slot not in availability_data[date]:
+            availability_data[date].append(slot)
+        elif status == "booked" and slot in availability_data[date]:
+            availability_data[date].remove(slot)
+    
+
+        doctor.availability = create_availability_string(availability_data)
+        db.session.commit()
+    
+        return jsonify({"success": True})
+
+    def parse_availability_string(availability_str):
+        """Parse availability string into dictionary {date: [slots]}"""
+        if not availability_str:
+            return {}
+    
+        availability_data = {}
+        try:
+            entries = availability_str.split(';')
+            for entry in entries:
+                if ':' in entry:
+                    date_part, slots_part = entry.split(':', 1)
+                    slots = [s.strip() for s in slots_part.split(',')] if slots_part else []
+                    availability_data[date_part.strip()] = slots
+        except Exception as e:
+            print(f"Error parsing availability string: {e}")
+            return {}
+    
+        return availability_data
+
+    def create_availability_string(availability_data):
+        """Create availability string from dictionary {date: [slots]}"""
+        if not availability_data:
+            return ""
+    
+        entries = []
+        for date, slots in sorted(availability_data.items()):
+            if slots:  
+                slots_str = ','.join(sorted(slots))
+                entries.append(f"{date}:{slots_str}")
+    
+        return ';'.join(entries)
+
 
     @app.route("/logout")
     @login_required

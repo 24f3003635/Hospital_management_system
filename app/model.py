@@ -57,7 +57,7 @@ class Appointment(db.Model):
     patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id'), nullable=False)
 
-    date = db.Column(db.String(20), nullable=False)
+    date = db.Column(db.String(20), nullable=False) #i need to change it to db.date
     time = db.Column(db.String(20), nullable=False)
     status = db.Column(db.String(20), default='scheduled')
 
