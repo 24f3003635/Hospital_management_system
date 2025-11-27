@@ -1,5 +1,5 @@
 from flask import render_template, request, url_for, redirect, flash,jsonify
-from sqlalchemy import or_
+from sqlalchemy import or_, distinct
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.database import db
@@ -136,8 +136,35 @@ def init_routes(app):
     def patient_dashboard():
         if current_user.role != 'patient':
             return redirect(url_for('home'))
-        return render_template("patient_dashboard.html", username=current_user.username)
 
+        patient = Patient.query.filter_by(user_id=current_user.id).first()
+        if not patient:
+            flash('Patient profile not found!', 'danger')
+            return redirect(url_for('home'))
+   
+        dept_tuples = db.session.query(distinct(Doctor.specialization)).all()
+        departments = [dept[0] for dept in dept_tuples]  
+    
+
+        appointments = db.session.query(
+            Appointment.id,
+            Doctor.name.label('doctor_name'),
+            Doctor.specialization.label('department'),
+            Appointment.date,
+            Appointment.time,
+            Appointment.status
+        ).join(Doctor).filter(Appointment.patient_id == patient.id).all()
+
+        current_date = date.today().isoformat()
+    
+        return render_template("patient_dashboard.html", 
+                         username=current_user.username, 
+                         id=patient.id,
+                         departments=departments,
+                         appointments=appointments,
+                         current_date=current_date)
+    
+ 
     @app.route("/doctor_dashboard")
     @login_required
     def doctor_dashboard():
@@ -610,10 +637,67 @@ def init_routes(app):
                 entries.append(f"{date}:{slots_str}")
     
         return ';'.join(entries)
+    
+    @app.route("/departments/<string:dept_name>")
+    @login_required
+    def departments(dept_name):
 
+        patient = Patient.query.filter_by(user_id=current_user.id).first()
+        if not patient:
+            flash('Patient profile not found!', 'danger')
+            return redirect(url_for('home'))
+    
+        doctors = db.session.query(Doctor.id, Doctor.name).filter(Doctor.specialization == dept_name).all()
+    
+        return render_template("Department.html", 
+                         doctors=doctors, 
+                         dept_name=dept_name, 
+                         id=patient.id) 
 
     @app.route("/logout")
     @login_required
     def logout():
         logout_user()
         return redirect(url_for("home"))
+    
+    @app.route("/edit_my_profile", methods=["GET", "POST"])
+    @login_required
+    def edit_my_profile():
+        if current_user.role != 'patient':
+            flash('Access denied!', 'danger')
+            return redirect(url_for('home'))
+    
+  
+        patient = Patient.query.filter_by(user_id=current_user.id).first()
+    
+        if not patient:
+            flash('Patient profile not found!', 'danger')
+            return redirect(url_for('patient_dashboard'))
+    
+        if request.method == "POST":
+            try:
+         
+                name = request.form.get("name")
+                phone = request.form.get("phone")
+                age = request.form.get("age")
+                email = request.form.get("email")
+                gender = request.form.get("gender")
+                address = request.form.get("address")
+            
+  
+                patient.name = name
+                patient.phone = phone
+                patient.age = int(age)
+                patient.email = email
+                patient.gender = gender
+                patient.address = address
+            
+                db.session.commit()
+                flash('Profile updated successfully!', 'success')
+                return redirect(url_for('patient_dashboard'))
+            
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Update failed: {str(e)}', 'danger')
+    
+        return render_template("edit_my_profile.html", patient=patient)
