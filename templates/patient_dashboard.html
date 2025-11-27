@@ -120,7 +120,7 @@
         </div>
 
         {% for app in appointments %}
-        {% if app.status == 'scheduled' and appointment.date >= current_date %}
+        {% if app.status == 'scheduled' and app.date >= current_date %}
         <div class="appointment-row">
             <div class="col-2">{{ loop.index }}</div>
             <div class="col-2">Dr. {{ app.doctor_name }}</div>
@@ -128,7 +128,7 @@
             <div class="col-2">{{ app.date }}</div>
             <div class="col-2">{{ app.time }}</div>
             <div class="col-2">
-                <a href="{{ url_for('cancel_appointment', id=app.id) }}" class="cancel-btn">
+                <a href="{{ url_for('cancel_appointment', appointment_id=app.id) }}" class="cancel-btn">
                     cancel
                 </a>
             </div>

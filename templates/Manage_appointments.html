@@ -38,12 +38,12 @@
                     <div class="col">History</div>
                 </div>
                 {% for appointment in appointments %}
-                    {% if appointment.date > current_date %}
+                    {% if appointment[5] >= current_date %}
                     <div class="row patient-row align-items-center py-2 border-bottom">
                         <div class="col">{{ loop.index }}</div>
-                        <div class="col">{{ appointment.name }}</div>
-                        <div class="col">{{ appointment.name_1 }}</div>
-                        <div class="col">{{ appointment.specialization }}</div>
+                        <div class="col">{{ appointment[1] }}</div>
+                        <div class="col">{{ appointment[3] }}</div>
+                        <div class="col">{{ appointment[4] }}</div>
                         <div class="col">
                             <a href="{{ url_for('patient_history', id=appointment.patient_id) }}" class="btn btn-warning btn-sm me-1">View</a>
                         </div>
@@ -71,9 +71,9 @@
                     {% if appointment.date < current_date %}
                     <div class="row patient-row align-items-center py-2 border-bottom">
                         <div class="col">{{ loop.index }}</div>
-                        <div class="col">{{ appointment.name }}</div>
-                        <div class="col">{{ appointment.name_1 }}</div>
-                        <div class="col">{{ appointment.specialization }}</div>
+                        <div class="col">{{ appointment[1] }}</div>
+                        <div class="col">{{ appointment[3] }}</div>
+                        <div class="col">{{ appointment[4] }}</div>
                         <div class="col">
                             <a href="{{ url_for('patient_history', id=appointment.patient_id) }}" class="btn btn-warning btn-sm me-1">View</a>
                         </div>
