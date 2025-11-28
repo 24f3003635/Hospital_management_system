@@ -48,11 +48,13 @@ Hospital-Management-System/
 │   ├── patient_history.html
 │   ├── search.html
 │   ├── sign_up.html
+│   ├── ad_search.html
 │   └── update_patient_history.html
 │
 ├── venv/
 │
 ├── main.py
+├── project_report.pdf
 ├── requirements.txt
 └── README.md
 

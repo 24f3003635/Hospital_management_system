@@ -84,9 +84,16 @@
     <span class="navbar-brand">Welcome {{username}}</span>
 
     <div>
+        <ul>
         <a href="{{ url_for('edit_my_profile') }}" class="btn btn-outline-light btn-sm">Edit Profile</a>
         <a href="{{ url_for('patient_history',id=id) }}" class="btn btn-outline-light btn-sm">History</a>
         <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
+        </ul>
+        <form class="d-flex" action="{{ url_for('search') }}" method="GET">
+            <input class="form-control me-2 bg-dark text-light border-secondary" 
+            type="search" name="query" placeholder="Search" required>
+            <button class="btn btn-outline-success" type="submit">Search</button>
+        </form>
     </div>
 </nav>
 

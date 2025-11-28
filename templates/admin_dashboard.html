@@ -74,7 +74,7 @@
                 <li class="nav-item"><a class="nav-link active" href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
             </ul>
 
-            <form class="d-flex" action="{{ url_for('search') }}" method="GET">
+            <form class="d-flex" action="{{ url_for('ad_search') }}" method="GET">
                 <input class="form-control me-2 bg-dark text-light border-secondary" 
                 type="search" name="query" placeholder="Search" required>
                 <button class="btn btn-outline-success" type="submit">Search</button>

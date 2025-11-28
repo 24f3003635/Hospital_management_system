@@ -850,3 +850,42 @@ def init_routes(app):
             db.session.rollback()
             flash(f'Error cancelling appointment: {str(e)}', 'danger')
         return redirect(url_for('patient_dashboard'))
+    
+    @app.route("/ad_search", methods=["GET"])
+    @login_required
+    def ad_search():
+        query = request.args.get("query", "").strip()
+
+        if not query:
+            flash("Please enter a search term.", "warning")
+            return redirect(request.referrer or url_for("admin_dashboard"))
+
+        search_terms = query.split()
+
+        doctor_conditions = []
+        for term in search_terms:
+            doctor_conditions.append(or_(
+                Doctor.name.ilike(f"%{term}%"),
+                Doctor.specialization.ilike(f"%{term}%")
+            ))
+
+        doctor_results = Doctor.query.filter(*doctor_conditions).all()
+
+  
+        patient_conditions = []
+        for term in search_terms:
+            patient_conditions.append(
+            Patient.name.ilike(f"%{term}%")
+            )
+
+        patient_results = Patient.query.filter(*patient_conditions).all()
+
+        if not doctor_results and not patient_results:
+            flash(f"No matching records found for '{query}'.", "info")
+
+        return render_template(
+            "ad_search.html",
+            query=query,
+            doctor_results=doctor_results,
+            patient_results=patient_results
+        )
