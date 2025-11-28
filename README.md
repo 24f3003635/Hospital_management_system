@@ -3,6 +3,25 @@ Hospital Management System
 A full-stack web application designed to streamline hospital operations, including patient management, doctor scheduling, appointments, medical history tracking, and administrative controls.
 This project uses Python, Flask, SQLite, HTML/CSS, and Bootstrap to create a simple yet functional management system.
 
+## 📸 App Screenshots
+
+<div style="display: flex; overflow-x: auto; gap: 15px; padding: 10px;">
+  <img src="static/images/1.png" width="250">
+  <img src="static/images/2.png" width="250">
+  <img src="static/images/3.png" width="250">
+  <img src="static/images/4.png" width="250">
+  <img src="static/images/5.png" width="250">
+  <img src="static/images/6.png" width="250">
+  <img src="static/images/7.png" width="250">
+  <img src="static/images/8.png" width="250">
+  <img src="static/images/9.png" width="250">
+  <img src="static/images/10.png" width="250">
+  <img src="static/images/11.png" width="250">
+  <img src="static/images/12.png" width="250">
+  <img src="static/images/13.png" width="250">
+  <img src="static/images/14.png" width="250">
+</div>
+
 📁 Project Directory Structure
 
 Hospital-Management-System/
